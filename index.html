@@ -3,50 +3,550 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Premium</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Sistem Pembayaran Anggota</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Efek scroll halus untuk navigasi menu */
+        html { scroll-behavior: smooth; }
+        /* Menyembunyikan scrollbar pada menu bar di layar kecil agar rapi */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Animasi transisi antar halaman agar lebih halus */
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+    </style>
 </head>
-<body>
-    <div class="background-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-    </div>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <div class="calculator-container">
-        <div class="display">
-            <div class="previous-operand" id="previous-operand"></div>
-            <div class="current-operand" id="current-operand">0</div>
+    <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Kas & Pembayaran
+            </h1>
+            <div id="connection-status" class="text-xs bg-indigo-800/80 px-3 py-1.5 rounded-full font-medium flex items-center gap-1.5 shadow-inner border border-indigo-600">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse" id="status-dot"></span>
+                <span id="status-text">Menghubungkan...</span>
+            </div>
         </div>
-        <div class="buttons">
-            <button class="btn span-2" data-action="all-clear">AC</button>
-            <button class="btn" data-action="delete">DEL</button>
-            <button class="btn operator" data-operator="÷">÷</button>
-            
-            <button class="btn number" data-number="7">7</button>
-            <button class="btn number" data-number="8">8</button>
-            <button class="btn number" data-number="9">9</button>
-            <button class="btn operator" data-operator="×">×</button>
-            
-            <button class="btn number" data-number="4">4</button>
-            <button class="btn number" data-number="5">5</button>
-            <button class="btn number" data-number="6">6</button>
-            <button class="btn operator" data-operator="-">-</button>
-            
-            <button class="btn number" data-number="1">1</button>
-            <button class="btn number" data-number="2">2</button>
-            <button class="btn number" data-number="3">3</button>
-            <button class="btn operator" data-operator="+">+</button>
-            
-            <button class="btn number" data-number=".">.</button>
-            <button class="btn number" data-number="0">0</button>
-            <button class="btn span-2 equal" data-action="calculate">=</button>
-        </div>
-    </div>
+        
+        <!-- Menu Navigasi Bawah (Diperbarui untuk Mode Halaman) -->
+        <nav class="bg-indigo-600 border-t border-indigo-500/50">
+            <div class="max-w-7xl mx-auto px-4">
+                <ul class="flex flex-row overflow-x-auto gap-2 py-2 text-sm font-medium hide-scrollbar">
+                    <li>
+                        <button onclick="switchPage('dasbor-rekapan', this)" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-800 text-white shadow-sm transition whitespace-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                            Dasbor Utama
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="switchPage('input-setoran', this)" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg hover:bg-indigo-500 text-indigo-50 transition whitespace-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Input Setoran
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="switchPage('manajemen-anggota', this)" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg hover:bg-indigo-500 text-indigo-50 transition whitespace-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                            Data Anggota
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
 
-    <script src="script.js"></script>
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+        
+        <!-- HALAMAN 1: Dasbor Rekapan (Ditampilkan secara default) -->
+        <div id="dasbor-rekapan" class="page-section block animate-fade-in">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002-2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Dasbor Rekapan & Matriks Pembayaran
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-slate-600">Filter Tahun:</label>
+                        <select id="dashboard-year-filter" class="px-3 py-1.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <!-- Diisi dinamis -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Ringkasan Statistik Kartu -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                        <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Total Pemasukan Tahun Ini</span>
+                        <h3 class="text-2xl font-bold text-indigo-900 mt-1" id="stat-total-income">Rp 0</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                        <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Bulan Terbayar Lunas</span>
+                        <h3 class="text-2xl font-bold text-emerald-900 mt-1" id="stat-paid-months">0 / 0</h3>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                        <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Total Anggota Aktif</span>
+                        <h3 class="text-2xl font-bold text-amber-900 mt-1" id="stat-total-members">0</h3>
+                    </div>
+                </div>
+
+                <!-- Matriks Rekapitulasi Tabel Utama -->
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 uppercase tracking-wider font-bold border-b border-slate-200">
+                                <th class="p-3 sticky left-0 bg-slate-100 z-10">Nama Anggota</th>
+                                <th class="p-2 text-center border-l border-slate-200">Jan</th>
+                                <th class="p-2 text-center border-l border-slate-200">Feb</th>
+                                <th class="p-2 text-center border-l border-slate-200">Mar</th>
+                                <th class="p-2 text-center border-l border-slate-200">Apr</th>
+                                <th class="p-2 text-center border-l border-slate-200">Mei</th>
+                                <th class="p-2 text-center border-l border-slate-200">Jun</th>
+                                <th class="p-2 text-center border-l border-slate-200">Jul</th>
+                                <th class="p-2 text-center border-l border-slate-200">Agt</th>
+                                <th class="p-2 text-center border-l border-slate-200">Sep</th>
+                                <th class="p-2 text-center border-l border-slate-200">Okt</th>
+                                <th class="p-2 text-center border-l border-slate-200">Nov</th>
+                                <th class="p-2 text-center border-l border-slate-200">Des</th>
+                                <th class="p-3 text-right border-l border-slate-200 font-bold">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matrix-table-body" class="divide-y divide-slate-100">
+                            <tr>
+                                <td colspan="14" class="text-center py-6 text-slate-400">Memuat data rekapitulasi...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- HALAMAN 2: Input Setoran (Disembunyikan default) -->
+        <div id="input-setoran" class="page-section hidden max-w-xl mx-auto animate-fade-in">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Input Setoran Pembayaran
+                </h2>
+                <form id="payment-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Pilih Anggota</label>
+                        <select id="payment-member-select" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                            <option value="">-- Pilih Anggota --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tahun Pembayaran</label>
+                        <select id="payment-year-select" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                            <!-- Diisi dinamis tahun aktif -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal Setoran (Rp)</label>
+                        <input type="number" id="payment-amount-input" min="5000" step="5000" placeholder="Contoh: 15000 (Kelipatan Rp 5.000)" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <p class="text-[11px] text-slate-400 mt-1">Tarif standar: Rp 5.000 / bulan. >Rp 60.000 otomatis ke tahun berikutnya.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-2">Simulasi Alokasi Grid 12 Bulan</label>
+                        <div class="grid grid-cols-4 gap-1.5" id="months-grid-preview">
+                            <!-- Dirender secara dinamis oleh JS -->
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-semibold transition shadow-sm shadow-emerald-200">Simpan Setoran</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- HALAMAN 3: Manajemen Anggota (Disembunyikan default) -->
+        <div id="manajemen-anggota" class="page-section hidden max-w-xl mx-auto animate-fade-in">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Manajemen Anggota
+                </h2>
+                <form id="add-member-form" class="flex gap-2 mb-4">
+                    <input type="text" id="member-name-input" placeholder="Nama Anggota Baru..." required class="flex-grow px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">Tambah</button>
+                </form>
+                <div class="max-h-[60vh] overflow-y-auto space-y-1.5 pr-1" id="members-list-container">
+                    <!-- Daftar anggota dirender secara dinamis -->
+                    <div class="text-xs text-slate-400 text-center py-4">Belum ada data anggota.</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Inisialisasi Variabel Global Supabase & State
+        let supabaseClient = null;
+        let membersData = [];
+        let paymentsData = [];
+        const monthlyTariff = 5000;
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+
+        const currentYear = new Date().getFullYear();
+
+        // Kredensial Supabase (Hardcoded)
+        const SUPABASE_URL = 'https://catotgwjldurscodggev.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhdG90Z3dqbGR1cnNjb2RnZ2V2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzODc0MDgsImV4cCI6MjEwNDk2MzQwOH0.6v1STo5v8qwhijSQ6BWcSIu3EQsO8l9iHeoOYmEptWc';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initYearSelectors();
+            renderMonthsGridPreview([], []);
+
+            // Inisialisasi langsung dengan kredensial Supabase
+            initSupabase(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            document.getElementById('add-member-form').addEventListener('submit', handleAddMember);
+            document.getElementById('payment-form').addEventListener('submit', handleAddPayment);
+            document.getElementById('payment-member-select').addEventListener('change', updateMonthsPreviewGrid);
+            document.getElementById('payment-year-select').addEventListener('change', updateMonthsPreviewGrid);
+            document.getElementById('dashboard-year-filter').addEventListener('change', renderDashboardMatrix);
+        });
+
+        // Inisialisasi Pilihan Tahun
+        function initYearSelectors() {
+            const yearSelects = [document.getElementById('payment-year-select'), document.getElementById('dashboard-year-filter')];
+            yearSelects.forEach(select => {
+                select.innerHTML = '';
+                // Mengubah batas akhir perulangan (loop) menjadi 2050
+                for (let y = currentYear - 2; y <= 2050; y++) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    if (y === currentYear) opt.selected = true;
+                    select.appendChild(opt);
+                }
+            });
+        }
+
+        // Inisialisasi Koneksi Supabase
+        function initSupabase(url, key) {
+            try {
+                supabaseClient = window.supabase.createClient(url, key);
+                document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-emerald-500";
+                document.getElementById('status-text').textContent = "Terhubung ke Supabase";
+                fetchAppData();
+            } catch (err) {
+                alert('Gagal menginisialisasi Supabase. Periksa kembali URL dan Anon Key Anda.');
+            }
+        }
+
+        // Mengambil Seluruh Data dari Supabase
+        async function fetchAppData() {
+            if (!supabaseClient) return;
+            try {
+                // Ambil Anggota
+                const { data: mems, error: memErr } = await supabaseClient.from('members').select('*').order('name', { ascending: true });
+                if (memErr) throw memErr;
+                membersData = mems || [];
+
+                // Ambil Pembayaran
+                const { data: pays, error: payErr } = await supabaseClient.from('payments').select('*');
+                if (payErr) throw payErr;
+                paymentsData = pays || [];
+
+                populateMemberDropdowns();
+                renderMembersList();
+                renderDashboardMatrix();
+                updateMonthsPreviewGrid();
+            } catch (err) {
+                console.error("Kesalahan sinkronisasi database:", err.message);
+            }
+        }
+
+        // Menampilkan Daftar Anggota di Kolom Kiri
+        function renderMembersList() {
+            const container = document.getElementById('members-list-container');
+            if (membersData.length === 0) {
+                container.innerHTML = `<div class="text-xs text-slate-400 text-center py-4">Belum ada data anggota.</div>`;
+                return;
+            }
+            container.innerHTML = membersData.map(m => `
+                <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 p-2.5 rounded-lg border border-slate-200 transition">
+                    <span class="text-xs font-medium text-slate-700">${escapeHtml(m.name)}</span>
+                    <button onclick="deleteMember('${m.id}')" class="text-rose-500 hover:text-rose-700 text-xs font-semibold px-2 py-1">Hapus</button>
+                </div>
+            `).join('');
+        }
+
+        // Mengisi Dropdown Anggota
+        function populateMemberDropdowns() {
+            const select = document.getElementById('payment-member-select');
+            const currentVal = select.value;
+            select.innerHTML = `<option value="">-- Pilih Anggota --</option>` + membersData.map(m => `
+                <option value="${m.id}" ${m.id === currentVal ? 'selected' : ''}>${escapeHtml(m.name)}</option>
+            `).join('');
+        }
+
+        // Menambah Anggota Baru ke Supabase
+        async function handleAddMember(e) {
+            e.preventDefault();
+            const input = document.getElementById('member-name-input');
+            const name = input.value.trim();
+            if (!name || !supabaseClient) return;
+
+            const { error } = await supabaseClient.from('members').insert([{ name }]);
+            if (error) {
+                alert('Gagal menambah anggota: ' + error.message);
+                return;
+            }
+            input.value = '';
+            fetchAppData();
+        }
+
+        // Menghapus Anggota dari Supabase
+        async function deleteMember(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus anggota ini beserta riwayat pembayarannya?')) return;
+            const { error } = await supabaseClient.from('payments').delete().eq('member_id', id);
+            const { error: memErr } = await supabaseClient.from('members').delete().eq('id', id);
+            if (memErr) {
+                alert('Gagal menghapus anggota.');
+                return;
+            }
+            fetchAppData();
+        }
+
+        // Memperbarui Grid Preview Bulan Berdasarkan Riwayat Anggota
+        function updateMonthsPreviewGrid() {
+            const memberId = document.getElementById('payment-member-select').value;
+            const year = parseInt(document.getElementById('payment-year-select').value);
+            
+            // Dapatkan bulan yang sudah lunas untuk anggota & tahun ini
+            const paidMonths = paymentsData
+                .filter(p => p.member_id === memberId && p.year === year)
+                .map(p => p.month);
+
+            renderMonthsGridPreview(paidMonths, []);
+        }
+
+        // Render Grid 12 Bulan Visual (Non-Editable & Otomatis)
+        function renderMonthsGridPreview(paidMonths = [], selectedMonths = []) {
+            const container = document.getElementById('months-grid-preview');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= 12; i++) {
+                const isPaid = paidMonths.includes(i);
+                const isSelected = selectedMonths.includes(i);
+                
+                let bgClass = "bg-slate-100 text-slate-500 border-slate-200";
+                let badgeText = "Belum";
+
+                if (isPaid) {
+                    bgClass = "bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold cursor-not-allowed";
+                    badgeText = "Lunas";
+                } else if (isSelected) {
+                    bgClass = "bg-indigo-600 text-white border-indigo-600 font-semibold shadow-sm";
+                    badgeText = "Alokasi";
+                }
+
+                const div = document.createElement('div');
+                div.className = `flex flex-col items-center justify-center p-2 rounded-lg border text-center transition ${bgClass}`;
+                div.innerHTML = `
+                    <span class="text-[11px] font-bold">${monthNames[i-1]}</span>
+                    <span class="text-[9px] opacity-80 uppercase">${badgeText}</span>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        // Listener untuk Nominal Setoran agar otomatis menghitung alokasi bulan
+        document.getElementById('payment-amount-input').addEventListener('input', (e) => {
+            const amount = parseInt(e.target.value) || 0;
+            const memberId = document.getElementById('payment-member-select').value;
+            const year = parseInt(document.getElementById('payment-year-select').value);
+
+            const paidMonths = paymentsData
+                .filter(p => p.member_id === memberId && p.year === year)
+                .map(p => p.month);
+
+            // Hitung jumlah bulan yang akan dialokasikan (Tarif Rp 5.000 / bulan)
+            let countToAllocate = Math.floor(amount / monthlyTariff);
+            let selectedMonths = [];
+
+            let currentMonthToCheck = 1;
+            while (countToAllocate > 0 && currentMonthToCheck <= 12) {
+                if (!paidMonths.includes(currentMonthToCheck)) {
+                    selectedMonths.push(currentMonthToCheck);
+                    countToAllocate--;
+                }
+                currentMonthToCheck++;
+            }
+
+            renderMonthsGridPreview(paidMonths, selectedMonths);
+        });
+
+        // Proses Menyimpan Setoran Pembayaran ke Supabase dengan Aturan Alokasi > Rp 60.000
+        async function handleAddPayment(e) {
+            e.preventDefault();
+            const memberId = document.getElementById('payment-member-select').value;
+            let year = parseInt(document.getElementById('payment-year-select').value);
+            let totalAmount = parseInt(document.getElementById('payment-amount-input').value);
+
+            if (!memberId || !totalAmount || totalAmount < 5000) {
+                alert('Pilih anggota dan masukkan nominal setoran yang valid (minimal Rp 5.000).');
+                return;
+            }
+
+            // Logika Otomatisasi Alokasi & > Rp 60.000 (maksimal 12 bulan per tahun)
+            let paymentsToInsert = [];
+            let remainingAmount = totalAmount;
+
+            while (remainingAmount >= monthlyTariff) {
+                // 1. Ambil bulan yang sudah lunas sebelumnya di database
+                const paidMonthsDB = paymentsData
+                    .filter(p => p.member_id === memberId && p.year === year)
+                    .map(p => p.month);
+
+                // 2. Ambil bulan yang BARU SAJA dialokasikan pada putaran loop ini (antrean simpan)
+                const newlyAllocatedMonths = paymentsToInsert
+                    .filter(p => p.year === year)
+                    .map(p => p.month);
+
+                // Gabungkan kedua data bulan agar sistem tahu bulan mana yang sudah tidak tersedia
+                const allPaidMonths = [...paidMonthsDB, ...newlyAllocatedMonths];
+
+                // Cari bulan kosong yang tersedia di tahun berjalan
+                let availableMonths = [];
+                for (let m = 1; m <= 12; m++) {
+                    if (!allPaidMonths.includes(m)) availableMonths.push(m);
+                }
+
+                if (availableMonths.length > 0) {
+                    // Alokasikan ke bulan kosong pertama yang tersedia
+                    const monthToPay = availableMonths[0];
+                    paymentsToInsert.push({
+                        member_id: memberId,
+                        year: year,
+                        month: monthToPay,
+                        amount: monthlyTariff
+                    });
+                    remainingAmount -= monthlyTariff;
+                } else {
+                    // Jika tahun ini sudah lunas penuh (12 bulan / total Rp 60.000), 
+                    // kelebihan dana otomatis dialokasikan masuk ke periode tahun berikutnya.
+                    year += 1;
+                }
+            }
+
+            if (paymentsToInsert.length === 0) {
+                alert('Semua bulan pada tahun tersebut sudah lunas untuk anggota ini!');
+                return;
+            }
+
+            // Kirim data pembayaran yang sudah rapi ke Supabase
+            const { error } = await supabaseClient.from('payments').insert(paymentsToInsert);
+            if (error) {
+                alert('Gagal menyimpan pembayaran: ' + error.message);
+                return;
+            }
+
+            document.getElementById('payment-amount-input').value = '';
+            fetchAppData(); // Perbarui tampilan setelah simpan
+            alert('Setoran berhasil disimpan dan dialokasikan secara otomatis!');
+        }
+
+        // Render Dasbor Rekapan Per Bulan dan Tahun (Matriks Tabel)
+        function renderDashboardMatrix() {
+            const filterYear = parseInt(document.getElementById('dashboard-year-filter').value);
+            const tbody = document.getElementById('matrix-table-body');
+
+            if (membersData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="14" class="text-center py-6 text-slate-400">Belum ada data anggota untuk direkap.</td></tr>`;
+                document.getElementById('stat-total-income').textContent = "Rp 0";
+                document.getElementById('stat-paid-months').textContent = "0 / 0";
+                document.getElementById('stat-total-members').textContent = "0";
+                return;
+            }
+
+            let totalYearIncome = 0;
+            let totalPaidCount = 0;
+            const totalPossibleMonths = membersData.length * 12;
+
+            tbody.innerHTML = membersData.map(member => {
+                const memberPayments = paymentsData.filter(p => p.member_id === member.id && p.year === filterYear);
+                let memberYearTotal = 0;
+
+                let rowHtml = `<tr class="hover:bg-slate-50 transition"><td class="p-3 font-medium text-slate-700 sticky left-0 bg-white z-10 border-r border-slate-200">${escapeHtml(member.name)}</td>`;
+
+                for (let m = 1; m <= 12; m++) {
+                    const paidRecord = memberPayments.find(p => p.month === m);
+                    if (paidRecord) {
+                        memberYearTotal += paidRecord.amount;
+                        totalYearIncome += paidRecord.amount;
+                        totalPaidCount++;
+                        rowHtml += `<td class="p-2 text-center border-l border-slate-100 bg-emerald-50 text-emerald-700 font-bold" title="Lunas (Rp ${paidRecord.amount.toLocaleString('id-ID')})">✓</td>`;
+                    } else {
+                        rowHtml += `<td class="p-2 text-center border-l border-slate-100 text-slate-300">-</td>`;
+                    }
+                }
+
+                rowHtml += `<td class="p-3 text-right font-bold text-slate-800 border-l border-slate-200 bg-slate-50">Rp ${memberYearTotal.toLocaleString('id-ID')}</td></tr>`;
+                return rowHtml;
+            }).join('');
+
+            // Perbarui Statistik Kartu
+            document.getElementById('stat-total-income').textContent = `Rp ${totalYearIncome.toLocaleString('id-ID')}`;
+            document.getElementById('stat-paid-months').textContent = `${totalPaidCount} / ${totalPossibleMonths}`;
+            document.getElementById('stat-total-members').textContent = membersData.length;
+        }
+
+        // Fungsi utilitas escape HTML untuk keamanan XSS
+        function escapeHtml(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // FUNGSI BARU: Logika Transisi Menu (Navigasi Halaman)
+        function switchPage(pageId, btnElement) {
+            // 1. Sembunyikan semua halaman yang memiliki class 'page-section'
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.add('hidden');
+                page.classList.remove('block');
+            });
+            
+            // 2. Tampilkan halaman yang dituju
+            const targetPage = document.getElementById(pageId);
+            if(targetPage) {
+                targetPage.classList.remove('hidden');
+                targetPage.classList.add('block');
+            }
+            
+            // 3. Reset warna semua tombol menu (kembali ke warna redup)
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-800', 'text-white', 'shadow-sm');
+                btn.classList.add('hover:bg-indigo-500', 'text-indigo-50');
+            });
+            
+            // 4. Beri highlight (warna terang) pada menu yang sedang aktif diklik
+            if (btnElement) {
+                btnElement.classList.remove('hover:bg-indigo-500', 'text-indigo-50');
+                btnElement.classList.add('bg-indigo-800', 'text-white', 'shadow-sm');
+            }
+        }
+    </script>
 </body>
 </html>
