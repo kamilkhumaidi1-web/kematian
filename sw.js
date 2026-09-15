@@ -1,7 +1,3 @@
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-});
-
-self.addEventListener('fetch', (e) => {
-  // Service worker dasar
+self.addEventListener('fetch', function(event) {
+  // Kosongkan saja
 });
