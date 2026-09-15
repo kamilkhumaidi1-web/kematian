@@ -549,12 +549,14 @@
         }
     </script>
 
+   
+    <!-- PASTE KODE SERVICE WORKER DI SINI -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('SW berhasil terdaftar', reg))
-            .catch(err => console.log('SW gagal terdaftar', err));
+          navigator.serviceWorker.register('sw.js')
+            .then((reg) => console.log('Service worker registered.', reg))
+            .catch((err) => console.log('Service worker not registered.', err));
         });
       }
     </script>
