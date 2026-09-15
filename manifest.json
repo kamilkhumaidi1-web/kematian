@@ -9,12 +9,14 @@
     {
       "src": "https://www.banksinarmas.com/biasakansekarang/wp-content/themes/redwood/lp_assets/images/kartukredit/asset/kartukredit-icon/icon-bsim-kartukredit_cashback.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "https://www.banksinarmas.com/biasakansekarang/wp-content/themes/redwood/lp_assets/images/kartukredit/asset/kartukredit-icon/icon-bsim-kartukredit_cashback.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
